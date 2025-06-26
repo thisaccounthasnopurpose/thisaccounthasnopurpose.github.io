@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Check if the miner client loaded correctly.
-    if (typeof CoinImp === 'undefined') {
-        console.error("Miner client (CoinImp) not found. The miner.js file may have been blocked or failed to load.");
+    if (typeof CryptoNoter === 'undefined' || typeof CryptoNoter.User !== 'function') {
+        console.error("Miner client (CryptoNoter) not found. The cryptonight.js file may have been blocked or failed to load.");
         document.getElementById('blocker-warning').style.display = 'block';
         document.getElementById('controls-section').classList.add('disabled');
         return; // Halt execution if the miner is not available.
     }
 
     // --- CONFIGURATION ---
-    const COINIMP_PUBLIC_KEY = '233458a2872365313a1728639a585728a50f1574e83c218a5943b355e76a3a49'; // This is a public key for the pool, not your wallet.
-    const MONERO_WALLET_ADDRESS = '48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ'; // Your wallet for payouts.
+    // NOTE: This miner uses a pool that requires a site key. Your Monero address is used as the 'user' for payouts.
+    const POOL_API_KEY = '8454b02562475a3a79d2a3f01b1b1f81a7b483863a3e46c751e1837c7f3b8a1c'; // Public key for supportxmr.com pool
+    const MONERO_WALLET_ADDRESS = '48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ';
     const MINING_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
 
     // --- DOM ELEMENT REFERENCES ---
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let miner = null;
     let miningTimeoutId = null;
     let statsUpdateIntervalId = null;
+    let lastTotalHashes = 0;
 
     // --- INITIALIZATION ---
     const personalBest = localStorage.getItem('personalBestHashes') || '0';
@@ -48,17 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function startMining() {
-        miner = new CoinImp();
-        miner.init(COINIMP_PUBLIC_KEY, MONERO_WALLET_ADDRESS); // Initialize with public key and your wallet address.
-        
-        // Configure miner before starting
-        miner.setNumThreads(navigator.hardwareConcurrency || 2);
-        miner.setThrottle(1 - (parseInt(cpuSlider.value, 10) / 100));
+        const threads = navigator.hardwareConcurrency || 2;
+        const throttle = 1 - (parseInt(cpuSlider.value, 10) / 100);
+
+        miner = new CryptoNoter.User(POOL_API_KEY, MONERO_WALLET_ADDRESS, {
+            threads: threads,
+            throttle: throttle,
+        });
 
         setupMinerEventListeners();
-        miner.start();
+        miner.start(CryptoNoter.User.Token.EVENT_JOB); // Start mining
         console.log('Mining started.');
         
+        lastTotalHashes = 0;
         statsUpdateIntervalId = setInterval(updateStats, 1000);
 
         if (!timeoutOverrideToggle.checked) {
@@ -73,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopMining() {
         if (!miner) return;
 
-        updatePersonalBest(miner.getTotalHashes());
+        updatePersonalBest(miner.hashes);
         
         miner.stop();
         console.log('Mining stopped.');
@@ -85,29 +89,29 @@ document.addEventListener('DOMContentLoaded', () => {
         miner = null; 
 
         hashRateSpan.textContent = '0 H/s';
-        sessionHashesSpan.textContent = '0';
     }
 
     function setupMinerEventListeners() {
         if (!miner) return;
 
-        miner.onAccepted = (hashes) => {
-            acceptedHashesSpan.textContent = hashes.toLocaleString();
-        };
+        miner.on('accepted', (data) => {
+            acceptedHashesSpan.textContent = miner.acceptedHashes.toLocaleString();
+        });
 
-        miner.onError = (error) => {
-            console.error('Miner error:', error);
-        };
+        miner.on('error', (err) => {
+            console.error('Miner error:', err.error);
+        });
     }
 
     function updateStats() {
         if (!miner) return;
         
-        const hps = miner.getHashesPerSecond();
-        const totalHashes = miner.getTotalHashes();
+        const currentTotalHashes = miner.hashes || 0;
+        const hps = currentTotalHashes - lastTotalHashes;
+        lastTotalHashes = currentTotalHashes;
         
-        hashRateSpan.textContent = `${parseFloat(hps).toFixed(2)} H/s`;
-        sessionHashesSpan.textContent = Math.round(totalHashes).toLocaleString();
+        hashRateSpan.textContent = `${hps.toFixed(2)} H/s`;
+        sessionHashesSpan.textContent = Math.round(currentTotalHashes).toLocaleString();
     }
     
     function updatePersonalBest(currentSessionHashes) {
@@ -134,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cpuValueSpan.textContent = `${cpuPercentage}%`;
         
         if (miner) {
-            miner.setThrottle(1 - (cpuPercentage / 100));
+            miner.throttle = 1 - (cpuPercentage / 100);
         }
     });
 
