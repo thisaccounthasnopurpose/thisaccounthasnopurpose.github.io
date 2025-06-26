@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Monero Mining</title>
+    
+    <!-- AuthedMine library - loaded from the required official source -->
+    <script src="https://authedmine.com/lib/authedmine.min.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #1a1a1a;
+            --secondary-bg: #2c2c2c;
+            --text-color: #e0e0e0;
+            --accent-color: #ff6600; /* Monero Orange */
+            --success-color: #4CAF50;
+            --warning-color: #b30000;
+            --border-color: #444;
+            --slider-track: #444;
+            --slider-thumb: var(--accent-color);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .warning-box {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .controls-grid, .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .control-item label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            background-color: var(--primary-bg);
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-item .label {
+            display: block;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .stat-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .leaderboard {
+            text-align: center;
+        }
+        
+        /* Toggle Switch Styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* CPU Resource Slider Styles */
+        .cpu-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: var(--slider-track);
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        .cpu-slider:hover {
+            opacity: 1;
+        }
+        .cpu-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--slider-thumb);
+            cursor: pointer;
+        }
+        .cpu-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--slider-thumb);
+            cursor: pointer;
+        }
+
+        #cpuValue {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .education h2 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .education p {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Educational Monero Miner</h1>
+        </header>
+
+        <div class="section warning-box">
+            <strong>Performance Warning:</strong> Enabling the miner will use your CPU resources, which may slow down your computer and will increase power consumption.
+        </div>
+
+        <div class="section controls">
+            <h2>Controls</h2>
+            <div class="controls-grid">
+                <div class="control-item">
+                    <label for="miningToggle">Start / Stop Mining</label>
+                    <label class="switch">
+                        <input type="checkbox" id="miningToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="control-item">
+                    <label for="cpuSlider">CPU Usage: <span id="cpuValue">50%</span></label>
+                    <input type="range" min="1" max="100" value="50" class="cpu-slider" id="cpuSlider">
+                </div>
+
+                <div class="control-item">
+                    <label for="timeoutOverrideToggle">Disable 1-Hour Timeout</label>
+                    <label class="switch">
+                        <input type="checkbox" id="timeoutOverrideToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section stats">
+            <h2>Live Session Data</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="label">XMR/USD Price</span>
+                    <span class="value" id="moneroPrice">$--.--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Hash Rate</span>
+                    <span class="value" id="hashRate">0 H/s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Session Hashes Submitted</span>
+                    <span class="value" id="sessionHashes">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Hashes Accepted by Pool</span>
+                    <span class="value" id="acceptedHashes">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section leaderboard">
+            <h2>Personal Best</h2>
+            <div class="stat-item">
+                <span class="label">Most Hashes in a Single Session</span>
+                <span class="value" id="personalBest">0</span>
+            </div>
+        </div>
+
+        <div class="section education">
+            <h2>What is Cryptojacking? (And Why This Isn't It)</h2>
+            <p><strong>Cryptojacking</strong> is the malicious and unauthorized use of someone's computer to mine cryptocurrency. Attackers embed mining scripts on websites, in ads, or in applications without the user's knowledge or consent. When a victim visits the site or runs the app, the script secretly uses their CPU power to mine currency for the attacker, often causing performance degradation, overheating, and increased electricity bills for the victim.</p>
+            <p>This website is an <strong>ethical alternative</strong>. We believe in full transparency and user consent. Here's how we are different:</p>
+            <ul>
+                <li><strong>Explicit Consent:</strong> Mining only starts when you flip the "Start Mining" switch. It never runs without your permission.</li>
+                <li><strong>Full Control:</strong> You can stop mining at any time. You can also control exactly how much of your CPU is used with the slider.</li>
+                <li><strong>Total Transparency:</strong> We show you your live hash rate, the number of hashes you've contributed, and how many have been accepted by the pool.</li>
+                <li><strong>Clear Warnings:</strong> We prominently display a warning about the performance and power impact, so you can make an informed decision.</li>
+            </ul>
+            <p>By providing these controls and information, we aim to educate users about the mechanics of browser-based mining in a safe and ethical environment.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURATION ---
+            const MONERO_WALLET_ADDRESS = '48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ';
+            const MINING_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+
+            // --- DOM ELEMENT REFERENCES ---
+            const miningToggle = document.getElementById('miningToggle');
+            const timeoutOverrideToggle = document.getElementById('timeoutOverrideToggle');
+            const cpuSlider = document.getElementById('cpuSlider');
+            const cpuValueSpan = document.getElementById('cpuValue');
+            const moneroPriceSpan = document.getElementById('moneroPrice');
+            const hashRateSpan = document.getElementById('hashRate');
+            const sessionHashesSpan = document.getElementById('sessionHashes');
+            const acceptedHashesSpan = document.getElementById('acceptedHashes');
+            const personalBestSpan = document.getElementById('personalBest');
+
+            // --- STATE VARIABLES ---
+            let miner = null;
+            let sessionStartHashes = 0;
+            let miningTimeoutId = null;
+            let statsUpdateIntervalId = null;
+
+            // --- INITIALIZATION ---
+            
+            // Load and display personal best from localStorage
+            const personalBest = localStorage.getItem('personalBestHashes') || '0';
+            personalBestSpan.textContent = parseInt(personalBest).toLocaleString();
+
+            // Fetch initial Monero price
+            fetchMoneroPrice();
+            // Fetch price every 5 minutes
+            setInterval(fetchMoneroPrice, 5 * 60 * 1000);
+
+            // --- CORE FUNCTIONS ---
+
+            async function fetchMoneroPrice() {
+                try {
+                    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    const price = data.monero.usd;
+                    moneroPriceSpan.textContent = `$${price.toFixed(2)}`;
+                } catch (error) {
+                    console.error('Failed to fetch Monero price:', error);
+                    moneroPriceSpan.textContent = '$--.--';
+                }
+            }
+            
+            function startMining() {
+                // Instantiate the miner if it doesn't exist
+                if (!miner) {
+                    miner = new AuthedMine.Anonymous(MONERO_WALLET_ADDRESS, {
+                        throttle: 1 - (parseInt(cpuSlider.value, 10) / 100)
+                    });
+                }
+
+                // Start the miner
+                miner.start();
+                console.log('Mining started.');
+
+                // Store total hashes at the start of the session for accurate session calculation
+                sessionStartHashes = miner.getTotalHashes();
+
+                // Set up event listeners on the miner
+                setupMinerEventListeners();
+
+                // Start updating UI stats
+                statsUpdateIntervalId = setInterval(updateStats, 1000);
+
+                // Set the automatic timeout unless overridden
+                if (!timeoutOverrideToggle.checked) {
+                    miningTimeoutId = setTimeout(() => {
+                        console.log('Automatic 1-hour timeout reached.');
+                        miningToggle.checked = false; // This will trigger the 'change' event and call stopMining
+                        stopMining();
+                    }, MINING_TIMEOUT_MS);
+                }
+            }
+
+            function stopMining() {
+                if (!miner) return;
+
+                const currentSessionHashes = miner.getTotalHashes() - sessionStartHashes;
+                updatePersonalBest(currentSessionHashes);
+                
+                miner.stop();
+                miner = null; // Allow garbage collection
+                console.log('Mining stopped.');
+
+                // Clear intervals and timeouts
+                clearInterval(statsUpdateIntervalId);
+                clearTimeout(miningTimeoutId);
+                statsUpdateIntervalId = null;
+                miningTimeoutId = null;
+
+                // Reset dynamic displays
+                hashRateSpan.textContent = '0 H/s';
+                sessionHashesSpan.textContent = '0';
+            }
+
+            function setupMinerEventListeners() {
+                if (!miner) return;
+                
+                // This event fires when a hash is accepted by the pool.
+                miner.on('accepted', () => {
+                    const currentAccepted = parseInt(acceptedHashesSpan.textContent.replace(/,/g, ''), 10) || 0;
+                    acceptedHashesSpan.textContent = (currentAccepted + 1).toLocaleString();
+                });
+
+                miner.on('error', (err) => {
+                    console.error('Miner error:', err);
+                });
+            }
+
+            function updateStats() {
+                if (!miner) return;
+                
+                const hps = miner.getHashesPerSecond().toFixed(2);
+                const sessionHashes = miner.getTotalHashes() - sessionStartHashes;
+                
+                hashRateSpan.textContent = `${hps} H/s`;
+                sessionHashesSpan.textContent = Math.round(sessionHashes).toLocaleString();
+            }
+            
+            function updatePersonalBest(currentSessionHashes) {
+                const oldBest = parseInt(localStorage.getItem('personalBestHashes') || '0', 10);
+                if (currentSessionHashes > oldBest) {
+                    console.log(`New personal best: ${Math.round(currentSessionHashes)} hashes!`);
+                    localStorage.setItem('personalBestHashes', Math.round(currentSessionHashes));
+                    personalBestSpan.textContent = Math.round(currentSessionHashes).toLocaleString();
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+
+            miningToggle.addEventListener('change', () => {
+                if (miningToggle.checked) {
+                    startMining();
+                } else {
+                    stopMining();
+                }
+            });
+
+            cpuSlider.addEventListener('input', () => {
+                const cpuPercentage = parseInt(cpuSlider.value, 10);
+                cpuValueSpan.textContent = `${cpuPercentage}%`;
+                
+                // If miner is active, adjust throttle in real-time
+                if (miner) {
+                    const throttle = 1 - (cpuPercentage / 100);
+                    miner.setThrottle(throttle);
+                    console.log(`CPU throttle set to ${throttle}`);
+                }
+            });
+
+            // Handle timeout override logic
+            timeoutOverrideToggle.addEventListener('change', () => {
+                if (miningToggle.checked) { // Only matters if mining is active
+                    if (timeoutOverrideToggle.checked) {
+                        // User disabled the timeout, so clear it if it exists
+                        clearTimeout(miningTimeoutId);
+                        miningTimeoutId = null;
+                        console.log('1-hour timeout disabled.');
+                    } else {
+                        // User re-enabled the timeout, so set a new one from now
+                        clearTimeout(miningTimeoutId); // Clear any old one first
+                        miningTimeoutId = setTimeout(() => {
+                            console.log('Automatic 1-hour timeout reached.');
+                            miningToggle.checked = false;
+                            stopMining();
+                        }, MINING_TIMEOUT_MS);
+                        console.log('1-hour timeout re-enabled.');
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
