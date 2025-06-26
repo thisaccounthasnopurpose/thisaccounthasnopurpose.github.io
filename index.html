@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Infinite Power Generator (Beta)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Make sure it takes full viewport height */
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px 60px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 90%;
+            border: 2px dashed #999; /* Gag element */
+        }
+        h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .warning {
+            color: #d9534f; /* Reddish color for warning */
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #d9534f;
+            background-color: #fdd;
+            border-radius: 5px;
+        }
+        .progress-bar-container {
+            width: 80%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 30px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0%; /* Will be controlled by JavaScript for the "infinite" effect */
+            height: 25px;
+            background-color: #28a745; /* Green */
+            border-radius: 5px;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            transition: width 0.1s ease-in-out; /* Smooth animation */
+        }
+        .small-text {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.8em;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Infinite Power Generator (Beta)</h1>
+        <p>Welcome, intrepid visitor! You've stumbled upon a revolutionary (and slightly absurd) experiment in distributed computing.</p>
+        <p>This website is an homage to the digital age, a digital hamster wheel, if you will. As long as you keep this tab open, your computer is kindly contributing a tiny, tiny fraction of its processing power to... well, to keep this very loading bar from ever actually finishing!</p>
+
+        <div class="warning">
+            ⚠️ **Heads Up!** This page uses a small portion of your computer's CPU for a fun, theoretical "computation." It's part of the gag! You might notice your fan speed up a little. Close this tab anytime to stop contributing.
+            <br><br>
+            **No real cryptocurrency mining is currently active on this page, but the concept is demonstrated.**
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+        <p class="small-text">Current computational progress: Continuously evaluating the meaning of 'finished'...</p>
+
+        <p class="small-text">This project is for educational and entertainment purposes only. Please enjoy responsibly!</p>
+    </div>
+
+    <div class="footer">
+        &copy; 2025 Gag Website Experiment. All rights reserved.
+    </div>
+
+    <script>
+        // Simple JavaScript for the "infinite" loading bar gag
+        const progressBar = document.getElementById('progressBar');
+        let progress = 0;
+        let direction = 1; // 1 for increasing, -1 for decreasing
+
+        function updateProgressBar() {
+            if (direction === 1) {
+                progress += Math.random() * 0.5; // Slowly increase
+                if (progress >= 99.5) { // Get very close to 100 but never hit it
+                    progress = 99.5;
+                    direction = -1; // Start decreasing slightly
+                }
+            } else {
+                progress -= Math.random() * 0.2; // Decrease even slower
+                if (progress <= 90) { // Keep it generally high
+                    progress = 90;
+                    direction = 1; // Start increasing again
+                }
+            }
+
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = Math.floor(progress) + '% Complete?';
+
+            // Add a slight CPU load for the "gag"
+            // This is a simple, non-malicious way to simulate CPU usage
+            // It will consume some CPU just by running this loop
+            let i = 0;
+            while (i < 1000000) { // Adjust this number for more/less load
+                i++;
+            }
+
+            requestAnimationFrame(updateProgressBar); // Request next frame
+        }
+
+        // Start the progress bar animation
+        updateProgressBar();
+    </script>
+</body>
+</html>
