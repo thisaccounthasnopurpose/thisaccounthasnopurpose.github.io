@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Monero Miner</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .control-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin-top: 0;
+            color: #34495e;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2980b9;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .leaderboard {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #cpu-slider {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Educational Monero Web Miner</h1>
+
+        <div class="warning">
+            <strong>Warning:</strong> Enabling the miner will use your CPU's processing power to solve mathematical problems. This will increase your computer's power consumption and may make it feel slower. Everything is done in your browser and stops when you close this tab.
+        </div>
+
+        <h2>Controls</h2>
+        <div class="control-group">
+            <label class="toggle-switch">
+                <input type="checkbox" id="mining-toggle">
+                <span class="slider"></span>
+            </label>
+            <span>Start / Stop Mining</span>
+        </div>
+        <div class="control-group">
+            <label for="cpu-slider">CPU Usage:</label>
+            <input type="range" min="1" max="100" value="10" id="cpu-slider" disabled>
+            <span id="cpu-value">10%</span>
+        </div>
+         <div class="control-group">
+            <label class="toggle-switch">
+                <input type="checkbox" id="mine-longer-toggle">
+                <span class="slider"></span>
+            </label>
+            <span>Disable 1-Hour Auto-Stop</span>
+        </div>
+
+        <h2>Live Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Monero (XMR) Value</h3>
+                <span class="stat-value" id="xmr-price">Loading...</span>
+            </div>
+            <div class="stat-card">
+                <h3>Your Hashes This Session</h3>
+                <span class="stat-value" id="session-hashes">0</span>
+            </div>
+            <div class="stat-card">
+                <h3>Total Hashes Accepted</h3>
+                <span class="stat-value" id="total-hashes">0</span>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h2>Session Leaderboard</h2>
+            <p>This shows the highest number of hashes you've achieved in a single session on this browser.</p>
+            <div class="stat-card">
+                <h3>Your High Score</h3>
+                <span class="stat-value" id="high-score">0</span>
+            </div>
+        </div>
+
+        <h2>What is Cryptojacking?</h2>
+        <p>
+            What this website is doing is called "cryptomining". We are asking for your consent to use your computer's power to mine a cryptocurrency (Monero) and we are transparent about what is happening.
+        </p>
+        <p>
+            <strong>Cryptojacking</strong> is when a website or program does this <em>without your consent</em>. A malicious website might secretly run a miner in the background, slowing down your computer and using your electricity to make money for the attacker, all without you knowing. They often hide the code and don't provide any of the controls or information you see here. The goal of this page is to demonstrate exactly what the technology does, so you can be more aware of it.
+        </p>
+    </div>
+
+    <!-- The Web Miner Library -->
+    <script src="https://cdn.jsdelivr.net/gh/notgiven688/webminerpool@v1.0.8/dist/bundle.min.js"></script>
+
+    <script>
+        // --- CONFIGURATION ---
+        // IMPORTANT: Replace this with your own Monero wallet address from a mining pool.
+        const walletAddress = "48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ";
+        const poolHost = "pool.supportxmr.com"; // A common pool that works with webminers
+
+        // --- DOM ELEMENTS ---
+        const miningToggle = document.getElementById('mining-toggle');
+        const mineLongerToggle = document.getElementById('mine-longer-toggle');
+        const cpuSlider = document.getElementById('cpu-slider');
+        const cpuValue = document.getElementById('cpu-value');
+        const xmrPriceDisplay = document.getElementById('xmr-price');
+        const sessionHashesDisplay = document.getElementById('session-hashes');
+        const totalHashesDisplay = document.getElementById('total-hashes');
+        const highScoreDisplay = document.getElementById('high-score');
+
+        // --- MINER AND STATE VARIABLES ---
+        let miner = null;
+        let miningTimeout;
+        let sessionHashes = 0;
+        let isMining = false;
+
+        // --- LEADERBOARD LOGIC ---
+        let highScore = localStorage.getItem('moneroMinerHighScore') || 0;
+        highScoreDisplay.innerText = highScore;
+
+        function updateHighScore() {
+            if (sessionHashes > highScore) {
+                highScore = sessionHashes;
+                localStorage.setItem('moneroMinerHighScore', highScore);
+                highScoreDisplay.innerText = highScore;
+            }
+        }
+
+        // --- MINING LOGIC ---
+        async function startMining() {
+            if (walletAddress === "YOUR_MONERO_WALLET_ADDRESS") {
+                alert("Please configure your Monero wallet address in the index.html file.");
+                miningToggle.checked = false;
+                return;
+            }
+
+            // Create a new miner instance
+            miner = await WMP.Anonymous(walletAddress, {
+                pool: { host: poolHost, port: 3333 },
+                throttle: 1 - (cpuSlider.value / 100),
+            });
+
+            // Listen to events
+            miner.on('found', () => sessionHashes++);
+            miner.on('accepted', () => {
+                let currentTotal = parseInt(totalHashesDisplay.innerText, 10);
+                totalHashesDisplay.innerText = currentTotal + 1;
+            });
+
+            await miner.start();
+            isMining = true;
+            cpuSlider.disabled = false;
+            console.log('Mining started.');
+
+            // Set a timeout to stop mining after 1 hour, unless disabled
+            if (!mineLongerToggle.checked) {
+                miningTimeout = setTimeout(stopMining, 3600 * 1000); // 1 hour in milliseconds
+                console.log('Mining will stop automatically in 1 hour.');
+            }
+        }
+
+        function stopMining() {
+            if (miner) {
+                miner.stop();
+                miner = null;
+                isMining = false;
+                cpuSlider.disabled = true;
+                clearTimeout(miningTimeout);
+                updateHighScore(); // Check if a new high score was set
+                sessionHashes = 0; // Reset for next session
+                console.log('Mining stopped.');
+            }
+            // Ensure the toggle is visually off
+            if (miningToggle.checked) {
+                miningToggle.checked = false;
+            }
+        }
+
+        // --- UI UPDATES ---
+        function updateStats() {
+            sessionHashesDisplay.innerText = sessionHashes;
+        }
+
+        async function fetchMoneroPrice() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                const price = data.monero.usd;
+                xmrPriceDisplay.innerText = `$${price.toFixed(2)}`;
+            } catch (error) {
+                console.error("Failed to fetch Monero price:", error);
+                xmrPriceDisplay.innerText = 'Error';
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        miningToggle.addEventListener('change', () => {
+            if (miningToggle.checked) {
+                startMining();
+            } else {
+                stopMining();
+            }
+        });
+
+        cpuSlider.addEventListener('input', () => {
+            const newThrottleValue = 1 - (cpuSlider.value / 100);
+            cpuValue.innerText = `${cpuSlider.value}%`;
+            if (miner) {
+                miner.setThrottle(newThrottleValue);
+            }
+        });
+        
+        mineLongerToggle.addEventListener('change', () => {
+            if (isMining) {
+                // If mining, reset the timer logic
+                clearTimeout(miningTimeout);
+                if (!mineLongerToggle.checked) {
+                    miningTimeout = setTimeout(stopMining, 3600 * 1000);
+                    console.log('Auto-stop re-enabled for 1 hour from now.');
+                } else {
+                    console.log('Auto-stop disabled.');
+                }
+            }
+        });
+
+        // Close miner when tab is closed
+        window.addEventListener('beforeunload', stopMining);
+
+        // --- INITIALIZATION ---
+        // Fetch price on load and then every 5 minutes
+        fetchMoneroPrice();
+        setInterval(fetchMoneroPrice, 300 * 1000);
+
+        // Update stats display every second
+        setInterval(updateStats, 1000);
+
+    </script>
+</body>
+</html>
