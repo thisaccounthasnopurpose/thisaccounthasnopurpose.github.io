@@ -178,7 +178,6 @@
 
     <script>
         // --- CONFIGURATION ---
-        // IMPORTANT: Replace this with your own Monero wallet address from a mining pool.
         const walletAddress = "48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ";
         const poolHost = "pool.supportxmr.com"; // A common pool that works with webminers
 
@@ -212,7 +211,7 @@
 
         // --- MINING LOGIC ---
         async function startMining() {
-            if (walletAddress === "48TjjUjavn7fjTQTj9uUwwf2WXQD55MRYebih88G4VnTUPy8ivTEwKJFHZx5DREWWF5QZXkUqYbFq6Uvnq7iw7mHC4seyxZ") {
+            if (walletAddress === "YOUR_MONERO_WALLET_ADDRESS") {
                 alert("Please configure your Monero wallet address in the index.html file.");
                 miningToggle.checked = false;
                 return;
