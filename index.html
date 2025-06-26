@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Educational Monero Mining</title>
     
-    <!-- AuthedMine library - loaded from the required official source -->
-    <script src="https://authedmine.com/lib/authedmine.min.js"></script>
+    <!-- Webminerpool library - loaded from the official, active source -->
+    <script src="https://webminerpool.com/lib/base.js"></script>
 
     <style>
         :root {
@@ -239,7 +239,7 @@
                     <span class="value" id="hashRate">0 H/s</span>
                 </div>
                 <div class="stat-item">
-                    <span class="label">Session Hashes Submitted</span>
+                    <span class="label">Session Hashes Computed</span>
                     <span class="value" id="sessionHashes">0</span>
                 </div>
                 <div class="stat-item">
@@ -290,7 +290,7 @@
 
             // --- STATE VARIABLES ---
             let miner = null;
-            let sessionStartHashes = 0;
+            let sessionHashes = 0;
             let miningTimeoutId = null;
             let statsUpdateIntervalId = null;
 
@@ -321,19 +321,18 @@
             }
             
             function startMining() {
-                // Instantiate the miner if it doesn't exist
-                if (!miner) {
-                    miner = new AuthedMine.Anonymous(MONERO_WALLET_ADDRESS, {
-                        throttle: 1 - (parseInt(cpuSlider.value, 10) / 100)
-                    });
-                }
+                const throttle = 1 - (parseInt(cpuSlider.value, 10) / 100);
+                
+                // Instantiate the miner using the Webminerpool library
+                miner = new WMP.Anonymous(MONERO_WALLET_ADDRESS, { throttle: throttle });
 
-                // Start the miner
                 miner.start();
                 console.log('Mining started.');
 
-                // Store total hashes at the start of the session for accurate session calculation
-                sessionStartHashes = miner.getTotalHashes();
+                // Reset session counters
+                sessionHashes = 0;
+                acceptedHashesSpan.textContent = '0';
+                sessionHashesSpan.textContent = '0';
 
                 // Set up event listeners on the miner
                 setupMinerEventListeners();
@@ -354,8 +353,7 @@
             function stopMining() {
                 if (!miner) return;
 
-                const currentSessionHashes = miner.getTotalHashes() - sessionStartHashes;
-                updatePersonalBest(currentSessionHashes);
+                updatePersonalBest(sessionHashes);
                 
                 miner.stop();
                 miner = null; // Allow garbage collection
@@ -369,7 +367,6 @@
 
                 // Reset dynamic displays
                 hashRateSpan.textContent = '0 H/s';
-                sessionHashesSpan.textContent = '0';
             }
 
             function setupMinerEventListeners() {
@@ -389,19 +386,21 @@
             function updateStats() {
                 if (!miner) return;
                 
-                const hps = miner.getHashesPerSecond().toFixed(2);
-                const sessionHashes = miner.getTotalHashes() - sessionStartHashes;
+                const hps = miner.getHashesPerSecond();
+                // We manually accumulate the session hashes since the library doesn't provide a total
+                sessionHashes += hps;
                 
-                hashRateSpan.textContent = `${hps} H/s`;
+                hashRateSpan.textContent = `${hps.toFixed(2)} H/s`;
                 sessionHashesSpan.textContent = Math.round(sessionHashes).toLocaleString();
             }
             
             function updatePersonalBest(currentSessionHashes) {
                 const oldBest = parseInt(localStorage.getItem('personalBestHashes') || '0', 10);
                 if (currentSessionHashes > oldBest) {
-                    console.log(`New personal best: ${Math.round(currentSessionHashes)} hashes!`);
-                    localStorage.setItem('personalBestHashes', Math.round(currentSessionHashes));
-                    personalBestSpan.textContent = Math.round(currentSessionHashes).toLocaleString();
+                    const roundedHashes = Math.round(currentSessionHashes);
+                    console.log(`New personal best: ${roundedHashes} hashes!`);
+                    localStorage.setItem('personalBestHashes', roundedHashes);
+                    personalBestSpan.textContent = roundedHashes.toLocaleString();
                 }
             }
 
