@@ -130,7 +130,9 @@ class MoneroWebminer {
   }
 
   stop() {
-    this.socket.close();
+    if (this.socket) {
+      this.socket.close();
+    }
     this.workers.forEach((worker) => {
       worker.terminate();
     });
@@ -177,6 +179,7 @@ class MoneroWebminer {
   }
 
   getTotalHashes() {
+    // This library's total hashes are the accepted ones.
     return this.accepted;
   }
 
