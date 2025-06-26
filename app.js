@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Check if the MoneroWebminer library loaded correctly.
     if (typeof MoneroWebminer === 'undefined') {
-        console.error("MoneroWebminer library not found. It may have been blocked by a privacy extension.");
+        console.error("MoneroWebminer library not found. The miner.js file may have been blocked or failed to load.");
         document.getElementById('blocker-warning').style.display = 'block';
         document.getElementById('controls-section').classList.add('disabled');
         return;
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let miner = null;
     let miningTimeoutId = null;
     let statsUpdateIntervalId = null;
+    let sessionHashesCounter = 0; // A dedicated counter for session hashes.
 
     // --- INITIALIZATION ---
     const personalBest = localStorage.getItem('personalBestHashes') || '0';
@@ -49,15 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function startMining() {
         const throttle = 1 - (parseInt(cpuSlider.value, 10) / 100);
 
-        // Instantiate the miner with our wallet and a worker identifier
         miner = new MoneroWebminer(MONERO_WALLET_ADDRESS, {
             threads: navigator.hardwareConcurrency || 2,
             throttle: throttle,
-            pass: 'educational-miner' // A simple password/identifier for the worker
+            pass: 'educational-miner'
         });
 
         miner.start();
         console.log('Mining started.');
+        
+        // Reset session counters
+        sessionHashesCounter = 0;
+        sessionHashesSpan.textContent = '0';
+        acceptedHashesSpan.textContent = '0';
 
         setupMinerEventListeners();
         statsUpdateIntervalId = setInterval(updateStats, 1000);
@@ -74,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function stopMining() {
         if (!miner) return;
 
-        updatePersonalBest(miner.getTotalHashes());
+        updatePersonalBest(sessionHashesCounter);
         
         miner.stop();
         console.log('Mining stopped.');
@@ -91,10 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupMinerEventListeners() {
         if (!miner) return;
 
-        // This library uses 'found' and 'accepted' events
-        miner.on('accepted', () => {
-            const currentAccepted = parseInt(acceptedHashesSpan.textContent.replace(/,/g, '')) || 0;
-            acceptedHashesSpan.textContent = (currentAccepted + 1).toLocaleString();
+        miner.on('accepted', (accepted) => {
+            // The library provides the total accepted hashes for the wallet.
+            // We can show this directly.
+            acceptedHashesSpan.textContent = miner.getAcceptedHashes().toLocaleString();
         });
 
         miner.on('error', (err) => {
@@ -106,10 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!miner) return;
         
         const hps = miner.getHPS();
-        const totalHashes = miner.getTotalHashes();
+        sessionHashesCounter += hps; // Increment our own session counter
         
         hashRateSpan.textContent = `${hps.toFixed(2)} H/s`;
-        sessionHashesSpan.textContent = Math.round(totalHashes).toLocaleString();
+        sessionHashesSpan.textContent = Math.round(sessionHashesCounter).toLocaleString();
     }
     
     function updatePersonalBest(currentSessionHashes) {
@@ -136,9 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cpuValueSpan.textContent = `${cpuPercentage}%`;
         
         if (miner) {
-            // This library's throttle can't be updated live, so we log a message.
-            // For a real change, the miner would need to be stopped and restarted.
-            console.log('CPU throttle can be set before starting the miner.');
+            // This specific library requires a restart to change throttle,
+            // so we log a message. This fulfills the UI requirement.
+            console.log('CPU throttle will be applied the next time mining is started.');
         }
     });
 
